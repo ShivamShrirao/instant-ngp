@@ -280,8 +280,10 @@ if __name__ == "__main__":
 		avglen += np.linalg.norm(f["transform_matrix"][0:3,3])
 	avglen /= nframes
 	print("avg camera distance from origin", avglen)
+	print(f["transform_matrix"])
 	for f in out["frames"]:
 		f["transform_matrix"][0:3,3] *= 4.0 / avglen # scale to "nerf sized"
+	print(f["transform_matrix"])
 
 	for f in out["frames"]:
 		f["transform_matrix"] = f["transform_matrix"].tolist()
