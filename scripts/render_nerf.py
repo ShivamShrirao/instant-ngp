@@ -22,6 +22,7 @@ from scenes import scenes_nerf, scenes_image, scenes_sdf, scenes_volume, setup_c
 
 from tqdm import tqdm
 from multiprocessing import Pool
+import concurrent.futures
 
 import pyngp as ngp # noqa
 
@@ -326,7 +327,6 @@ if __name__ == "__main__":
 			write_image(outname + ".png", image)
 
 		if args.cam_file or args.train_view:
-			
 			if args.train_view:
 				render_outp = os.path.join(args.scene, 'train_view')
 				with open(os.path.join(args.scene, args.train_view)) as f:
@@ -365,8 +365,11 @@ if __name__ == "__main__":
 					fname = f"{i:04d}.jpg"
 				write_image(os.path.join(render_outp, fname), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
 
-			with Pool() as p:
-				r = list(tqdm(p.imap(mp_write, enumerate(frames), chunksize=12), total=len(frames)))
+			# with Pool() as p:
+			# 	r = list(tqdm(p.imap(mp_write, enumerate(frames), chunksize=48), total=len(frames)))
+			
+			with concurrent.futures.ThreadPoolExecutor() as executor:
+				r = list(tqdm(executor.map(mp_write, enumerate(frames), chunksize=48), total=len(frames)))
 
 			# for i, frame in enumerate(tqdm(frames, unit="frames", desc=f"Saving")):
 			# 	write_image(os.path.join(render_outp, f"{i:04d}.jpg"), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
