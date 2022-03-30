@@ -57,6 +57,7 @@ def parse_args():
 	parser.add_argument("--sharpen", default=0, help="Set amount of sharpening applied to NeRF training images.")
 
 	parser.add_argument("--cam_file", default="", help="Camera json file name.")
+	parser.add_argument("--train_view", default="", help="train transforms file.")
 	parser.add_argument("--n_seconds", default=5, type=int, help="Sets the length of output video in seconds.")
 	parser.add_argument("--fps", default=24, type=int, help="Sets the fps for render video.")
 	parser.add_argument("--exposure", default=0, help="Set amount of exposure applied to render output.")
@@ -324,15 +325,35 @@ if __name__ == "__main__":
 				os.makedirs(os.path.dirname(outname), exist_ok=True)
 			write_image(outname + ".png", image)
 
-		if args.cam_file:
-			render_outp = os.path.join(args.scene, 'render')
+		if args.cam_file or args.train_view:
+			
+			if args.train_view:
+				render_outp = os.path.join(args.scene, 'train_view')
+				with open(os.path.join(args.scene, args.train_view)) as f:
+					train_view = json.load(f)
+				testbed.background_color = [0.0, 0.0, 0.0, 1.0]
+				testbed.snap_to_pixel_centers = True
+				testbed.nerf.rendering_min_alpha = 1e-4
+
+				testbed.fov_axis = 0
+				testbed.fov = train_view["camera_angle_x"] * 180 / np.pi
+				itr_obj = train_view["frames"]
+				itr = range(len(itr_obj))
+			else:
+				render_outp = os.path.join(args.scene, 'render')
+				numframes = int(args.n_seconds*args.fps)
+				testbed.load_camera_path(os.path.join(args.scene, args.cam_file))
+				itr = range(numframes+1)
 			os.makedirs(render_outp, exist_ok=True)
-			numframes = int(args.n_seconds*args.fps)
-			testbed.load_camera_path(os.path.join(args.scene, args.cam_file))
+			testbed.shall_train = False
 			frames = []
-			for i in tqdm(range(numframes+1), unit="frames", desc=f"Rendering"):
+			for i in tqdm(itr, unit="frames", desc=f"Rendering"):
 				# testbed.camera_smoothing = i > 0
-				frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
+				if args.train_view:
+					testbed.set_nerf_camera_matrix(np.matrix(itr_obj[i]["transform_matrix"])[:-1,:])
+					frame = testbed.render(args.width, args.height, args.screenshot_spp, True)
+				else:
+					frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
 				if i > 0:
 					frames.append(frame)
 
