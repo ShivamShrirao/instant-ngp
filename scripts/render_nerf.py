@@ -63,12 +63,16 @@ def parse_args():
 	parser.add_argument("--fps", default=24, type=int, help="Sets the fps for render video.")
 	parser.add_argument("--exposure", default=0, help="Set amount of exposure applied to render output.")
 
+	parser.add_argument("--gpu_id", default=0, type=int, help="Select thee gpu to use.")
+
+
 	args = parser.parse_args()
 	return args
 
 
 if __name__ == "__main__":
 	args = parse_args()
+	os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
 
 	if args.mode == "":
 		if args.scene in scenes_sdf:
@@ -369,7 +373,7 @@ if __name__ == "__main__":
 			# 	r = list(tqdm(p.imap(mp_write, enumerate(frames), chunksize=48), total=len(frames)))
 			
 			with concurrent.futures.ThreadPoolExecutor() as executor:
-				r = list(tqdm(executor.map(mp_write, enumerate(frames), chunksize=48), total=len(frames)))
+				r = list(tqdm(executor.map(mp_write, enumerate(frames), chunksize=48), total=len(frames), desc="Saving"))
 
 			# for i, frame in enumerate(tqdm(frames, unit="frames", desc=f"Saving")):
 			# 	write_image(os.path.join(render_outp, f"{i:04d}.jpg"), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
