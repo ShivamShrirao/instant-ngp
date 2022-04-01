@@ -59,12 +59,10 @@ def parse_args():
 
 	parser.add_argument("--cam_file", default="", help="Camera json file name.")
 	parser.add_argument("--train_view", default="", help="train transforms file.")
+	parser.add_argument("--train_view_out", default="train_view", help="train view out folder.")
 	parser.add_argument("--n_seconds", default=5, type=int, help="Sets the length of output video in seconds.")
 	parser.add_argument("--fps", default=24, type=int, help="Sets the fps for render video.")
 	parser.add_argument("--exposure", default=0, help="Set amount of exposure applied to render output.")
-
-	parser.add_argument("--gpu_id", default=0, type=int, help="Select thee gpu to use.")
-
 
 	args = parser.parse_args()
 	return args
@@ -72,7 +70,6 @@ def parse_args():
 
 if __name__ == "__main__":
 	args = parse_args()
-	os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
 
 	if args.mode == "":
 		if args.scene in scenes_sdf:
@@ -332,7 +329,7 @@ if __name__ == "__main__":
 
 		if args.cam_file or args.train_view:
 			if args.train_view:
-				render_outp = os.path.join(args.scene, 'train_view')
+				render_outp = os.path.join(args.scene, args.train_view_out)
 				with open(os.path.join(args.scene, args.train_view)) as f:
 					train_view = json.load(f)
 				testbed.background_color = [0.0, 0.0, 0.0, 1.0]
