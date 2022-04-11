@@ -347,7 +347,7 @@ if __name__ == "__main__":
 				itr = range(numframes+1)
 			os.makedirs(render_outp, exist_ok=True)
 			testbed.shall_train = False
-			testbed.background_color = [0.0, 1.0, 0.0, 1.0]
+			testbed.background_color = [0.0, 0.0, 0.0, 0.0]
 			frames = []
 			for i in tqdm(itr, unit="frames", desc=f"Rendering"):
 				start_t = time.time()
@@ -369,7 +369,7 @@ if __name__ == "__main__":
 				if args.train_view:
 					fname = itr_obj[i]["file_path"].split(os.sep)[-1]
 				else:
-					fname = f"{i:04d}.jpg"
+					fname = f"{i:04d}.png"
 				write_image(os.path.join(render_outp, fname), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
 
 			# with Pool() as p:

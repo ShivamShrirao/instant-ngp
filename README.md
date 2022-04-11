@@ -44,7 +44,7 @@ export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
 Begin by cloning this repository and all its submodules using the following command:
 ```sh
-$ git clone --recursive https://github.com/nvlabs/instant-ngp
+$ git clone --recursive https://github.com/ShivamShrirao/instant-ngp
 $ cd instant-ngp
 ```
 
