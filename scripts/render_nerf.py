@@ -347,8 +347,10 @@ if __name__ == "__main__":
 				itr = range(numframes+1)
 			os.makedirs(render_outp, exist_ok=True)
 			testbed.shall_train = False
+			testbed.background_color = [0.0, 1.0, 0.0, 1.0]
 			frames = []
 			for i in tqdm(itr, unit="frames", desc=f"Rendering"):
+				start_t = time.time()
 				# testbed.camera_smoothing = i > 0
 				if args.train_view:
 					testbed.set_nerf_camera_matrix(np.matrix(itr_obj[i]["transform_matrix"])[:-1,:])
@@ -357,6 +359,10 @@ if __name__ == "__main__":
 					frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
 				if i > 0 or args.train_view:
 					frames.append(frame)
+					if i > 2:
+						if (time.time()-start_t) > 5:
+							print("Taking too long, Stopping render.")
+							break
 
 			def mp_write(params):
 				i, frame = params
