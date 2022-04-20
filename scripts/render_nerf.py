@@ -348,37 +348,27 @@ if __name__ == "__main__":
 			os.makedirs(render_outp, exist_ok=True)
 			testbed.shall_train = False
 			testbed.background_color = [0.0, 0.0, 0.0, 0.0]
-			frames = []
-			for i in tqdm(itr, unit="frames", desc=f"Rendering"):
-				start_t = time.time()
-				# testbed.camera_smoothing = i > 0
-				if args.train_view:
-					testbed.set_nerf_camera_matrix(np.matrix(itr_obj[i]["transform_matrix"])[:-1,:])
-					frame = testbed.render(args.width, args.height, args.screenshot_spp, True)
-				else:
-					frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
-				if i > 0 or args.train_view:
-					frames.append(frame)
-					if i > 2:
-						if (time.time()-start_t) > 5:
-							print("Taking too long, Stopping render.")
-							break
 
-			def mp_write(params):
-				i, frame = params
+			def mp_write(i, frame):
 				if args.train_view:
 					fname = itr_obj[i]["file_path"].split(os.sep)[-1]
 				else:
 					fname = f"{i:04d}.png"
 				write_image(os.path.join(render_outp, fname), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
 
-			# with Pool() as p:
-			# 	r = list(tqdm(p.imap(mp_write, enumerate(frames), chunksize=48), total=len(frames)))
-			
 			with concurrent.futures.ThreadPoolExecutor() as executor:
-				r = list(tqdm(executor.map(mp_write, enumerate(frames), chunksize=48), total=len(frames), desc="Saving"))
-
-			# for i, frame in enumerate(tqdm(frames, unit="frames", desc=f"Saving")):
-			# 	write_image(os.path.join(render_outp, f"{i:04d}.jpg"), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
-
+				for i in tqdm(itr, unit="frames", desc=f"Rendering"):
+					start_t = time.time()
+					# testbed.camera_smoothing = i > 0
+					if args.train_view:
+						testbed.set_nerf_camera_matrix(np.matrix(itr_obj[i]["transform_matrix"])[:-1,:])
+						frame = testbed.render(args.width, args.height, args.screenshot_spp, True)
+					else:
+						frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
+					if i > 0 or args.train_view:
+						executor.submit(mp_write, i, frame)
+						if i > 2:
+							if (time.time()-start_t) > 6:
+								print("Taking too long, Stopping render.", args.scene)
+								break
 
