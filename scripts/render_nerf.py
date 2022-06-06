@@ -22,7 +22,7 @@ from scenes import scenes_nerf, scenes_image, scenes_sdf, scenes_volume, setup_c
 
 from tqdm import tqdm
 from multiprocessing import Pool
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pyngp as ngp # noqa
 
@@ -356,7 +356,8 @@ if __name__ == "__main__":
 					fname = f"{i:04d}.png"
 				write_image(os.path.join(render_outp, fname), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
 
-			with concurrent.futures.ThreadPoolExecutor() as executor:
+			futures = []
+			with ThreadPoolExecutor() as executor:
 				for i in tqdm(itr, unit="frames", desc=f"Rendering"):
 					start_t = time.time()
 					# testbed.camera_smoothing = i > 0
@@ -366,9 +367,11 @@ if __name__ == "__main__":
 					else:
 						frame = testbed.render(args.width, args.height, args.screenshot_spp, True, float(i)/numframes, float(i + 1)/numframes, args.fps, shutter_fraction=0.0)
 					if i > 0 or args.train_view:
-						executor.submit(mp_write, i, frame)
+						futures.append(executor.submit(mp_write, i, frame))
 						if i > 2:
 							if (time.time()-start_t) > 6:
 								print("Taking too long, Stopping render.", args.scene)
 								break
+				for _ in tqdm(as_completed(futures), total=len(futures), desc="Saving"):
+					pass
 
