@@ -14,7 +14,6 @@ import commentjson as json
 
 import numpy as np
 
-import sys
 import time
 
 from common import *
@@ -64,6 +63,7 @@ def parse_args():
 	parser.add_argument("--n_seconds", default=5, type=int, help="Sets the length of output video in seconds.")
 	parser.add_argument("--fps", default=24, type=int, help="Sets the fps for render video.")
 	parser.add_argument("--exposure", default=0, help="Set amount of exposure applied to render output.")
+	parser.add_argument("--save_intermediate", action="store_true", help="Save intermediate render output (faster).")
 
 	args = parser.parse_args()
 	return args
@@ -355,7 +355,11 @@ if __name__ == "__main__":
 					fname = itr_obj[i]["file_path"].split(os.sep)[-1]
 				else:
 					fname = f"{i:04d}.png"
-				write_image(os.path.join(render_outp, fname), np.clip(frame * 2**args.exposure, 0.0, 1.0), quality=100)
+				if args.save_intermediate:
+					with open(os.path.join(render_outp, fname), "wb") as f:
+						np.save(f, frame)
+				else:
+					write_image(os.path.join(render_outp, fname), np.clip(frame*(2**args.exposure), 0.0, 1.0), quality=100)
 
 			futures = []
 			with ThreadPoolExecutor() as executor:
@@ -370,7 +374,7 @@ if __name__ == "__main__":
 					if i > 0 or args.train_view:
 						futures.append(executor.submit(mp_write, i, frame))
 						if i > 2:
-							if (time.time()-start_t) > 6:
+							if (time.time()-start_t) > 8:
 								print("Taking too long, Stopping render.", args.scene)
 								break
 				for _ in tqdm(as_completed(futures), total=len(futures), desc="Saving"):
